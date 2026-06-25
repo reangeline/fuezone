@@ -1,0 +1,45 @@
+name: fuezone
+description: "Fuezone — timer de treino para luta, HIIT e condicionamento."
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # --- Áudio ---
+  # just_audio: tocar os sons do timer. Permite configurar a sessão de
+  # áudio pra SOBREPOR música em vez de cortar (via audio_session).
+  just_audio: ^0.9.40
+  audio_session: ^0.1.21
+
+  # --- Manter tela ligada durante o timer ---
+  wakelock_plus: ^1.2.8
+
+  # --- Vibração (aviso sem som, pra quem treina no mudo) ---
+  vibration: ^2.0.0
+
+  # --- Persistência local dos presets custom ---
+  # shared_preferences pro simples; se preferir consultas/estrutura,
+  # troque por isar ou sqflite depois. Começa simples.
+  shared_preferences: ^2.3.2
+
+  # --- Anúncios (fim de sessão apenas) ---
+  google_mobile_ads: ^5.2.0
+
+  # --- Ícones de UI ---
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/sounds/
