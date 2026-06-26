@@ -2,17 +2,13 @@ import 'dart:async';
 
 import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:vibration/vibration.dart';
 
 import '../timer/timer_engine.dart';
 import '../timer/timer_models.dart';
 
-/// Escuta o stream [TimerEvent] do engine e toca os sons correspondentes.
-///
-/// Usa 4 players fixos (um por arquivo) para que cada som esteja sempre
-/// pronto no início — sem latência perceptível ao tocar.
-///
-/// Configurado com mixWithOthers (iOS) / sonification (Android) para que
-/// os sons do timer sobreponham a música do usuário sem pausá-la.
+/// Listens to the engine's event stream and plays the corresponding sounds.
+/// Configured with mixWithOthers so timer sounds overlay the user's music.
 class AudioService {
   AudioService(Stream<TimerEvent> events, {required List<TimerPhase> phases})
       : _events = events,
@@ -23,15 +19,17 @@ class AudioService {
 
   StreamSubscription<TimerEvent>? _subscription;
   int _currentPhaseIndex = 0;
+  bool _hasVibrator = false;
 
-  final _startPlayer = AudioPlayer();
-  final _restPlayer = AudioPlayer();
+  final _startPlayer   = AudioPlayer();
+  final _restPlayer    = AudioPlayer();
   final _warningPlayer = AudioPlayer();
-  final _endPlayer = AudioPlayer();
+  final _endPlayer     = AudioPlayer();
 
   Future<void> init() async {
     await _configureAudioSession();
     await _preloadPlayers();
+    _hasVibrator = await Vibration.hasVibrator();
     _subscribe();
   }
 
@@ -51,10 +49,10 @@ class AudioService {
 
   Future<void> _preloadPlayers() async {
     await Future.wait([
-      _load(_startPlayer, 'assets/sounds/start.mp3'),
-      _load(_restPlayer, 'assets/sounds/rest.mp3'),
+      _load(_startPlayer,   'assets/sounds/start.mp3'),
+      _load(_restPlayer,    'assets/sounds/rest.mp3'),
       _load(_warningPlayer, 'assets/sounds/warning.mp3'),
-      _load(_endPlayer, 'assets/sounds/end.mp3'),
+      _load(_endPlayer,     'assets/sounds/end.mp3'),
     ]);
   }
 
@@ -62,7 +60,7 @@ class AudioService {
     try {
       await player.setAsset(asset);
     } catch (_) {
-      // Som ausente não deve travar o timer.
+      // Missing sound file must never crash the app.
     }
   }
 
@@ -73,11 +71,15 @@ class AudioService {
           _onPhaseStarted();
         case TimerEvent.warning:
           _play(_warningPlayer);
+          _vibrate(duration: 80);
         case TimerEvent.phaseEnded:
+          final phase = _phases.elementAtOrNull(_currentPhaseIndex);
+          if (phase?.type == PhaseType.work) _play(_endPlayer);
           _currentPhaseIndex++;
         case TimerEvent.finished:
           _currentPhaseIndex = 0;
-          _play(_endPlayer);
+          if (_phases.lastOrNull?.type != PhaseType.work) _play(_endPlayer);
+          _vibrate(pattern: [0, 300, 120, 300]);
       }
     });
   }
@@ -86,8 +88,10 @@ class AudioService {
     final phase = _phases.elementAtOrNull(_currentPhaseIndex);
     if (phase?.type == PhaseType.rest) {
       _play(_restPlayer);
+      _vibrate(duration: 150);
     } else {
       _play(_startPlayer);
+      _vibrate(duration: 250);
     }
   }
 
@@ -95,9 +99,18 @@ class AudioService {
     try {
       await player.seek(Duration.zero);
       await player.play();
-    } catch (_) {
-      // Falha de reprodução não deve travar o timer.
-    }
+    } catch (_) {}
+  }
+
+  void _vibrate({int? duration, List<int>? pattern}) {
+    if (!_hasVibrator) return;
+    try {
+      if (pattern != null) {
+        Vibration.vibrate(pattern: pattern);
+      } else {
+        Vibration.vibrate(duration: duration ?? 200);
+      }
+    } catch (_) {}
   }
 
   void dispose() {

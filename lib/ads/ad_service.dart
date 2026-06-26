@@ -32,10 +32,15 @@ class AdService {
     _loadAd();
   }
 
-  void _onEvent(TimerEvent event) {
-    if (event == TimerEvent.finished && !_shown && _elapsed >= _minSession) {
-      _showAd();
-    }
+  void _onEvent(TimerEvent _) {
+    // Auto-trigger removido — WorkoutCompleteScreen chama showIfEligible()
+    // após montar, garantindo que a tela aparece antes do interstitial.
+  }
+
+  /// Exibe o interstitial se a sessão foi longa o suficiente e o ad ainda
+  /// não foi mostrado. Deve ser chamado pela tela de conclusão após montar.
+  void showIfEligible() {
+    if (!_shown && _elapsed >= _minSession) _showAd();
   }
 
   Future<void> _loadAd() async {

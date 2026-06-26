@@ -44,12 +44,12 @@ class _PhaseRingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = (size.width / 2) - 10;
-    const strokeWidth = 10.0;
+    final radius = (size.width / 2) - 14;
+    const strokeWidth = 14.0;
     const startAngle = -pi / 2;
 
     final trackPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.15)
+      ..color = Colors.white.withValues(alpha: 0.18)
       ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;

@@ -7,7 +7,7 @@ class TimerPresets {
   /// Fase de preparação padrão no início de qualquer treino.
   static TimerPhase _prepare([int seconds = 10]) => TimerPhase(
         type: PhaseType.prepare,
-        label: 'Prepare-se',
+        label: 'Get ready',
         duration: Duration(seconds: seconds),
       );
 
@@ -30,7 +30,7 @@ class TimerPresets {
       if (i < rounds) {
         phases.add(TimerPhase(
           type: PhaseType.rest,
-          label: 'Descanso',
+          label: 'Rest',
           duration: restDuration,
         ));
       }
@@ -47,7 +47,7 @@ class TimerPresets {
       );
 
   static TimerConfig boxing() => fight(
-        name: 'Boxe 12 x 3min',
+        name: 'Boxing 12 x 3min',
         rounds: 12,
         roundDuration: const Duration(minutes: 3),
         restDuration: const Duration(minutes: 1),
@@ -64,13 +64,13 @@ class TimerPresets {
     for (var i = 1; i <= rounds; i++) {
       phases.add(TimerPhase(
         type: PhaseType.work,
-        label: 'Trabalho',
+        label: 'Work',
         duration: work,
       ));
       if (i < rounds) {
         phases.add(TimerPhase(
           type: PhaseType.rest,
-          label: 'Descanso',
+          label: 'Rest',
           duration: rest,
         ));
       }
@@ -87,7 +87,7 @@ class TimerPresets {
     for (var i = 1; i <= minutes; i++) {
       phases.add(TimerPhase(
         type: PhaseType.work,
-        label: 'Minuto $i',
+        label: 'Minute $i',
         duration: interval,
       ));
     }
@@ -108,7 +108,7 @@ class TimerPresets {
       ));
     }
     return TimerConfig(
-      name: 'Mobilidade',
+      name: 'Mobility',
       phases: phases,
       warningSeconds: 5,
     );

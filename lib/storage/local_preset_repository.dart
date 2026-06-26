@@ -40,6 +40,21 @@ class LocalPresetRepository implements PresetRepository {
   }
 
   @override
+  Future<void> update(String id, TimerConfig config) async {
+    try {
+      final presets = await list();
+      final idx = presets.indexWhere((p) => p.id == id);
+      if (idx == -1) return;
+      presets[idx] = SavedPreset(
+        id: id,
+        savedAt: presets[idx].savedAt,
+        config: config,
+      );
+      await _write(presets);
+    } catch (_) {}
+  }
+
+  @override
   Future<void> delete(String id) async {
     try {
       final presets = await list();
@@ -88,6 +103,9 @@ Map<String, dynamic> _toJson(SavedPreset p) => {
 
 TimerConfig _configFromJson(Map<String, dynamic> json) => TimerConfig(
       name: json['name'] as String,
+      workoutType: WorkoutType.values.byName(
+        (json['workoutType'] as String?) ?? WorkoutType.workout.name,
+      ),
       warningSeconds: (json['warningSeconds'] as num?)?.toInt() ?? 5,
       phases: (json['phases'] as List)
           .map((p) => _phaseFromJson(p as Map<String, dynamic>))
@@ -96,6 +114,7 @@ TimerConfig _configFromJson(Map<String, dynamic> json) => TimerConfig(
 
 Map<String, dynamic> _configToJson(TimerConfig c) => {
       'name': c.name,
+      'workoutType': c.workoutType.name,
       'warningSeconds': c.warningSeconds,
       'phases': c.phases.map(_phaseToJson).toList(),
     };

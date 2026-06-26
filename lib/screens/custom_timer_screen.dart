@@ -14,8 +14,7 @@ import 'timer_screen.dart';
 // Helpers
 // ---------------------------------------------------------------------------
 
-String _defaultLabel(PhaseType t) =>
-    t == PhaseType.work ? 'Trabalho' : 'Descanso';
+String _defaultLabel(PhaseType t) => t == PhaseType.work ? 'Work' : 'Rest';
 
 // ---------------------------------------------------------------------------
 // Estado mutável de uma fase em edição
@@ -76,10 +75,10 @@ class CustomTimerScreen extends StatefulWidget {
 
 class _CustomTimerScreenState extends State<CustomTimerScreen> {
   final PresetRepository _repo = LocalPresetRepository();
-  final _nameCtrl = TextEditingController(text: 'Meu timer');
+  final _nameCtrl = TextEditingController(text: 'My timer');
   final List<_PhaseData> _phases = [
-    _PhaseData(type: PhaseType.work, label: 'Trabalho', min: 1, sec: 0),
-    _PhaseData(type: PhaseType.rest, label: 'Descanso', min: 0, sec: 30),
+    _PhaseData(type: PhaseType.work, label: 'Work', min: 1, sec: 0),
+    _PhaseData(type: PhaseType.rest, label: 'Rest', min: 0, sec: 30),
   ];
 
   @override
@@ -143,7 +142,7 @@ class _CustomTimerScreenState extends State<CustomTimerScreen> {
     await _repo.save(_buildConfig());
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Salvo nos seus presets')),
+      const SnackBar(content: Text('Saved to your presets')),
     );
   }
 
@@ -151,7 +150,7 @@ class _CustomTimerScreenState extends State<CustomTimerScreen> {
     if (!_isValid) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Adicione pelo menos uma fase com duração > 0')),
+            content: Text('Add at least one phase with duration > 0')),
       );
       return;
     }
@@ -176,7 +175,7 @@ class _CustomTimerScreenState extends State<CustomTimerScreen> {
         surfaceTintColor: Colors.transparent,
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
-          'Timer personalizado',
+          'Custom timer',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: Colors.white,
               ),
@@ -189,11 +188,11 @@ class _CustomTimerScreenState extends State<CustomTimerScreen> {
               onPressed: _isValid ? _save : null,
               icon:
                   const Icon(Icons.bookmark_add_outlined, color: Colors.white),
-              tooltip: 'Salvar preset',
+              tooltip: 'Save preset',
             ),
           ),
           Padding(
-            padding: EdgeInsets.only(right: AppSpacing.sm),
+            padding: const EdgeInsets.only(right: AppSpacing.sm),
             child: AnimatedOpacity(
               opacity: _isValid ? 1.0 : 0.35,
               duration: AppAnimations.durationMedium,
@@ -201,16 +200,16 @@ class _CustomTimerScreenState extends State<CustomTimerScreen> {
                 onTap: _isValid ? _start : null,
                 color: AppColors.work,
                 borderRadius: 20,
-                padding: EdgeInsets.symmetric(
+                padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.play_arrow_rounded,
+                    const Icon(Icons.play_arrow_rounded,
                         color: Colors.white, size: 18),
-                    SizedBox(width: AppSpacing.xs),
+                    const SizedBox(width: AppSpacing.xs),
                     Text(
-                      'Iniciar',
+                      'Start',
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
@@ -228,7 +227,7 @@ class _CustomTimerScreenState extends State<CustomTimerScreen> {
         children: [
           // Campo do nome
           Padding(
-            padding: EdgeInsets.fromLTRB(
+            padding: const EdgeInsets.fromLTRB(
                 AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.xs),
             child: TextField(
               controller: _nameCtrl,
@@ -236,7 +235,7 @@ class _CustomTimerScreenState extends State<CustomTimerScreen> {
                     color: Colors.white,
                   ),
               decoration: InputDecoration(
-                labelText: 'Nome do timer',
+                labelText: 'Timer name',
                 labelStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Colors.white54,
                     ),
@@ -246,7 +245,7 @@ class _CustomTimerScreenState extends State<CustomTimerScreen> {
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: EdgeInsets.symmetric(
+                contentPadding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.sm + 6, vertical: AppSpacing.sm),
               ),
             ),
@@ -255,14 +254,14 @@ class _CustomTimerScreenState extends State<CustomTimerScreen> {
           Expanded(
             child: ReorderableListView(
               buildDefaultDragHandles: false,
-              padding: EdgeInsets.fromLTRB(
+              padding: const EdgeInsets.fromLTRB(
                   AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.sm),
               onReorderItem: _onReorderItem,
               children: [
                 for (final phase in _phases)
                   Padding(
                     key: phase.key,
-                    padding: EdgeInsets.only(bottom: AppSpacing.sm),
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                     child: _PhaseCard(
                       index: _phases.indexOf(phase),
                       data: phase,
@@ -286,16 +285,16 @@ class _CustomTimerScreenState extends State<CustomTimerScreen> {
               onTap: _addPhase,
               color: AppColors.surface,
               borderRadius: 14,
-              padding: EdgeInsets.symmetric(
+              padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.md, vertical: AppSpacing.md - 2),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.add_rounded,
                       color: Colors.white.withValues(alpha: 0.7), size: 20),
-                  SizedBox(width: AppSpacing.sm),
+                  const SizedBox(width: AppSpacing.sm),
                   Text(
-                    'Adicionar fase',
+                    'Add phase',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.white.withValues(alpha: 0.7),
                           fontWeight: FontWeight.w500,
@@ -369,7 +368,7 @@ class _PhaseCardState extends State<_PhaseCard> {
             ? Border.all(color: Colors.red.withValues(alpha: 0.6), width: 1)
             : Border.all(color: Colors.white.withValues(alpha: 0.06), width: 1),
       ),
-      padding: EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -378,7 +377,7 @@ class _PhaseCardState extends State<_PhaseCard> {
           ReorderableDragStartListener(
             index: widget.index,
             child: Padding(
-              padding: EdgeInsets.only(
+              padding: const EdgeInsets.only(
                   top: 2, left: AppSpacing.xs, right: AppSpacing.xs),
               child: Icon(
                 Icons.drag_handle_rounded,
@@ -404,7 +403,7 @@ class _PhaseCardState extends State<_PhaseCard> {
                     GestureDetector(
                       onTap: widget.onDelete,
                       child: Padding(
-                        padding: EdgeInsets.all(AppSpacing.xs),
+                        padding: const EdgeInsets.all(AppSpacing.xs),
                         child: Icon(
                           Icons.close_rounded,
                           color: Colors.white.withValues(alpha: 0.3),
@@ -414,7 +413,7 @@ class _PhaseCardState extends State<_PhaseCard> {
                     ),
                   ],
                 ),
-                SizedBox(height: AppSpacing.sm),
+                const SizedBox(height: AppSpacing.sm),
                 // Campo label
                 TextField(
                   controller: phase.labelCtrl,
@@ -422,7 +421,7 @@ class _PhaseCardState extends State<_PhaseCard> {
                         color: Colors.white,
                       ),
                   decoration: InputDecoration(
-                    hintText: 'Nome da fase (ex: Round 1, Peito)',
+                    hintText: 'Phase name (e.g. Round 1, Chest)',
                     hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.white.withValues(alpha: 0.3),
                         ),
@@ -433,11 +432,11 @@ class _PhaseCardState extends State<_PhaseCard> {
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: EdgeInsets.symmetric(
+                    contentPadding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.xs + 2, vertical: AppSpacing.xs),
                   ),
                 ),
-                SizedBox(height: AppSpacing.sm),
+                const SizedBox(height: AppSpacing.sm),
                 // Duração
                 Row(
                   children: [
@@ -447,19 +446,19 @@ class _PhaseCardState extends State<_PhaseCard> {
                       label: 'min',
                       onChanged: _onDurationChanged,
                     ),
-                    SizedBox(width: AppSpacing.sm),
+                    const SizedBox(width: AppSpacing.sm),
                     _DurationField(
                       controller: phase.secCtrl,
                       hint: '00',
-                      label: 'seg',
+                      label: 'sec',
                       maxValue: 59,
                       onChanged: _onDurationChanged,
                       onEditingComplete: _clampSeconds,
                     ),
                     if (_showDurationError) ...[
-                      SizedBox(width: AppSpacing.md),
+                      const SizedBox(width: AppSpacing.md),
                       Text(
-                        'Duração deve ser > 0',
+                        'Duration must be > 0',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                               color: Colors.red.withValues(alpha: 0.8),
                             ),
@@ -497,14 +496,14 @@ class _TypeToggle extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         _TypeChip(
-          label: 'Trabalho',
+          label: 'Work',
           active: selected == PhaseType.work,
           activeColor: AppColors.work,
           onTap: () => onChanged(PhaseType.work),
         ),
         const SizedBox(width: 6),
         _TypeChip(
-          label: 'Descanso',
+          label: 'Rest',
           active: selected == PhaseType.rest,
           activeColor: AppColors.rest,
           onTap: () => onChanged(PhaseType.rest),
@@ -534,7 +533,7 @@ class _TypeChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: AppAnimations.durationFast,
         curve: AppAnimations.curveDefault,
-        padding: EdgeInsets.symmetric(
+        padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.sm + 2, vertical: AppSpacing.xs + 1),
         decoration: BoxDecoration(
           color: active
@@ -612,14 +611,14 @@ class _DurationField extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: EdgeInsets.symmetric(
+              contentPadding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.xs, vertical: AppSpacing.xs),
             ),
             onChanged: (_) => onChanged(),
             onEditingComplete: onEditingComplete,
           ),
         ),
-        SizedBox(width: AppSpacing.xs),
+        const SizedBox(width: AppSpacing.xs),
         Text(
           label,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(

@@ -1,6 +1,14 @@
 // Princípio central: todo modo de treino é apenas uma sequência de fases
 // diferente. O motor não conhece "BJJ" ou "Tabata" — só percorre fases.
 
+/// Tipo visual do treino. Usado apenas pela UI para adaptar a exibição
+/// do timer — não afeta a lógica do motor.
+enum WorkoutType {
+  fight,   // luta — mostra "Round X / Y"
+  hiit,    // HIIT / Tabata — mostra "Interval X / Y"
+  workout, // força / condicionamento geral — mostra o nome da seção
+}
+
 /// Tipo da fase. Usado pela UI pra decidir cor/som, não pela lógica do motor.
 enum PhaseType {
   prepare, // contagem inicial antes de começar ("prepare-se")
@@ -42,6 +50,9 @@ class TimerConfig {
   /// Nome do preset ("BJJ 5x5", "Tabata", "Peito - descanso 3min").
   final String name;
 
+  /// Tipo visual — controla como o timer é exibido na tela.
+  final WorkoutType workoutType;
+
   /// Fases na ordem exata de execução.
   final List<TimerPhase> phases;
 
@@ -52,6 +63,7 @@ class TimerConfig {
   const TimerConfig({
     required this.name,
     required this.phases,
+    this.workoutType = WorkoutType.workout,
     this.warningSeconds = 10,
   });
 

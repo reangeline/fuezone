@@ -23,8 +23,8 @@ class PrimaryButton extends StatefulWidget {
     this.enabled = true,
     this.width,
     this.padding,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   State<PrimaryButton> createState() => _PrimaryButtonState();
@@ -84,13 +84,15 @@ class _PrimaryButtonState extends State<PrimaryButton>
                 horizontal: AppSpacing.lg,
               ),
           decoration: BoxDecoration(
-            color: widget.enabled ? AppColors.primary : AppColors.primary.withOpacity(0.5),
+            color: widget.enabled
+                ? AppColors.primary
+                : AppColors.primary.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(12),
             boxShadow: isPressed ? AppElevations.subtle : AppElevations.medium,
           ),
           child: Center(
             child: widget.isLoading
-                ? SizedBox(
+                ? const SizedBox(
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(

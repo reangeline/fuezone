@@ -12,8 +12,6 @@ dependencies:
     sdk: flutter
 
   # --- Áudio ---
-  # just_audio: tocar os sons do timer. Permite configurar a sessão de
-  # áudio pra SOBREPOR música em vez de cortar (via audio_session).
   just_audio: ^0.9.40
   audio_session: ^0.1.21
 

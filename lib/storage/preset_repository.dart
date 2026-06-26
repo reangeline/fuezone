@@ -15,6 +15,7 @@ class SavedPreset {
 abstract class PresetRepository {
   Future<List<SavedPreset>> list();
   Future<void> save(TimerConfig config);
+  Future<void> update(String id, TimerConfig config);
   Future<void> delete(String id);
   Future<void> reorder(List<String> orderedIds);
 }
