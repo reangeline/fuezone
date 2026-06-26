@@ -4,6 +4,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../ads/ad_service.dart';
 import '../audio/audio_service.dart';
+import '../live_activity/live_activity_service.dart';
 import '../theme/app_animations.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
@@ -27,6 +28,7 @@ class _TimerScreenState extends State<TimerScreen> {
   late TimerEngine _engine;
   late AudioService _audio;
   late AdService _ads;
+  final _liveActivity = LiveActivityService();
   bool _completionNavigated = false;
 
   @override
@@ -37,6 +39,7 @@ class _TimerScreenState extends State<TimerScreen> {
     _ads = AdService(_engine.events, _engine.snapshots);
     _audio.init();
     _ads.init();
+    _liveActivity.start(widget.config, _engine.snapshots);
     WakelockPlus.enable();
     _engine.start();
   }
@@ -46,6 +49,7 @@ class _TimerScreenState extends State<TimerScreen> {
     _engine.dispose();
     _audio.dispose();
     _ads.dispose();
+    _liveActivity.dispose();
     WakelockPlus.disable();
     super.dispose();
   }
@@ -112,6 +116,7 @@ class _TimerScreenState extends State<TimerScreen> {
     _engine.dispose();
     _audio.dispose();
     _ads.dispose();
+    _liveActivity.dispose();
     setState(() {
       _engine = TimerEngine(widget.config);
       _audio = AudioService(_engine.events, phases: widget.config.phases);
@@ -119,6 +124,7 @@ class _TimerScreenState extends State<TimerScreen> {
     });
     _audio.init();
     _ads.init();
+    _liveActivity.start(widget.config, _engine.snapshots);
     _engine.start();
   }
 }

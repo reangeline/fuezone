@@ -35,16 +35,26 @@ class AudioService {
 
   Future<void> _configureAudioSession() async {
     final session = await AudioSession.instance;
+    // playback + mixWithOthers: audio continues when screen locks (required
+    // for timer beeps in background) and mixes over any playing music without
+    // interrupting it. ambient would silence on lock screen — not acceptable.
+    // We do NOT set MPNowPlayingInfoCenter metadata or register
+    // MPRemoteCommandCenter handlers, so no lock-screen media controls appear.
     await session.configure(const AudioSessionConfiguration(
       avAudioSessionCategory: AVAudioSessionCategory.playback,
       avAudioSessionCategoryOptions:
           AVAudioSessionCategoryOptions.mixWithOthers,
       androidAudioAttributes: AndroidAudioAttributes(
         contentType: AndroidAudioContentType.sonification,
-        usage: AndroidAudioUsage.notification,
+        usage: AndroidAudioUsage.assistanceSonification,
       ),
       androidWillPauseWhenDucked: false,
     ));
+    // configure() only registers the category; setActive(true) is what tells
+    // iOS to keep the session alive while the app is backgrounded/screen locked.
+    // Without this call, iOS silently deactivates the session on lock and all
+    // audio stops even though UIBackgroundModes:audio is declared in Info.plist.
+    await session.setActive(true);
   }
 
   Future<void> _preloadPlayers() async {
