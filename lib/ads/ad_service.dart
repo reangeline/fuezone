@@ -5,10 +5,10 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../timer/timer_engine.dart';
 
-// TODO: Substituir pelos IDs reais do AdMob antes de publicar.
-// Reaproveitar a conta do Holy Messages — domínio app-ads.txt: fuezone.com.
-const _kInterstitialAndroid = 'ca-app-pub-3940256099942544/1033173712'; // teste
-const _kInterstitialIos = 'ca-app-pub-3940256099942544/4411468910'; // teste
+// TODO: trocar pelos IDs reais após publicar o app e AdMob aprovar.
+// IDs reais: ca-app-pub-7328881363835651/1901369050 (ambas plataformas)
+const _kInterstitialAndroid = 'ca-app-pub-3940256099942544/1033173712';
+const _kInterstitialIos     = 'ca-app-pub-3940256099942544/4411468910';
 
 /// Escuta os streams do engine e exibe interstitial no fim de sessão.
 /// Não conhece UI — segue o mesmo padrão de desacoplamento do AudioService.
@@ -61,7 +61,7 @@ class AdService {
         ),
       );
     } catch (_) {
-      // Falha de ad nunca deve travar o timer
+      // Ad failure must never crash the timer.
     }
   }
 

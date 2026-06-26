@@ -6,6 +6,9 @@ import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  MobileAds.instance.updateRequestConfiguration(
+    RequestConfiguration(testDeviceIds: ['4f8c3dd5f38a948cf532c9960e7389c5']),
+  );
   await MobileAds.instance.initialize();
   runApp(const FuezoneApp());
 }
