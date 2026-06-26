@@ -28,11 +28,11 @@ dependencies:
   # troque por isar ou sqflite depois. Começa simples.
   shared_preferences: ^2.3.2
 
-  # --- Anúncios (fim de sessão apenas) ---
-  google_mobile_ads: ^5.2.0
-
   # --- Ícones de UI ---
   cupertino_icons: ^1.0.8
+
+  # --- Anúncios (interstitial apenas no fim de sessão) ---
+  google_mobile_ads: ^3.0.0
 
 dev_dependencies:
   flutter_test:

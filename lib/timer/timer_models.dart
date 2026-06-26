@@ -1,8 +1,5 @@
-/// Modelo de dados do motor de timer.
-///
-/// Princípio central: TODO modo de treino (BJJ, HIIT, EMOM, mobilidade,
-/// descanso de série) é apenas uma SEQUÊNCIA DE FASES diferente.
-/// O motor não conhece "BJJ" ou "Tabata" — só sabe percorrer fases.
+// Princípio central: todo modo de treino é apenas uma sequência de fases
+// diferente. O motor não conhece "BJJ" ou "Tabata" — só percorre fases.
 
 /// Tipo da fase. Usado pela UI pra decidir cor/som, não pela lógica do motor.
 enum PhaseType {
