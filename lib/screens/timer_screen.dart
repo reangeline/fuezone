@@ -1093,6 +1093,23 @@ class _WorkoutPhaseItem extends StatelessWidget {
 
   Color get _accent => AppColors.forPhase(phase.type);
 
+  bool _hasPlanningInfo(TimerPhase p) =>
+      (p.reps != null && p.reps!.isNotEmpty) ||
+      (p.weight != null && p.weight!.isNotEmpty) ||
+      (p.obs != null && p.obs!.isNotEmpty);
+
+  String _planningLabel(TimerPhase p) {
+    final parts = <String>[
+      if (p.reps != null && p.reps!.isNotEmpty) p.reps!,
+      if (p.weight != null && p.weight!.isNotEmpty) p.weight!,
+    ];
+    final main = parts.join(' × ');
+    if (p.obs != null && p.obs!.isNotEmpty) {
+      return main.isEmpty ? p.obs! : '$main · ${p.obs!}';
+    }
+    return main;
+  }
+
   String _fmt(Duration d) {
     final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
@@ -1140,12 +1157,11 @@ class _WorkoutPhaseItem extends StatelessWidget {
                           letterSpacing: 1.5,
                         ),
                       ),
-                      if (phase.seriesNote != null &&
-                          phase.seriesNote!.isNotEmpty)
+                      if (_hasPlanningInfo(phase))
                         Padding(
-                          padding: const EdgeInsets.only(top: 3),
+                          padding: const EdgeInsets.only(top: 4),
                           child: Text(
-                            phase.seriesNote!,
+                            _planningLabel(phase),
                             style: const TextStyle(
                               color: Colors.white38,
                               fontSize: 13,

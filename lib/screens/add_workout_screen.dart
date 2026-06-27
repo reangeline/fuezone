@@ -21,7 +21,9 @@ class _SectionData {
     int sec = 0,
     int restMin = 1,
     int restSec = 0,
-    String seriesNote = '',
+    String reps = '',
+    String weight = '',
+    String obs = '',
   })  : key = UniqueKey(),
         labelCtrl = TextEditingController(text: label),
         minCtrl = TextEditingController(text: min.toString()),
@@ -29,7 +31,9 @@ class _SectionData {
         restMinCtrl = TextEditingController(text: restMin.toString()),
         restSecCtrl =
             TextEditingController(text: restSec.toString().padLeft(2, '0')),
-        seriesNoteCtrl = TextEditingController(text: seriesNote);
+        repsCtrl = TextEditingController(text: reps),
+        weightCtrl = TextEditingController(text: weight),
+        obsCtrl = TextEditingController(text: obs);
 
   final Key key;
   final TextEditingController labelCtrl;
@@ -37,7 +41,9 @@ class _SectionData {
   final TextEditingController secCtrl;
   final TextEditingController restMinCtrl;
   final TextEditingController restSecCtrl;
-  final TextEditingController seriesNoteCtrl;
+  final TextEditingController repsCtrl;
+  final TextEditingController weightCtrl;
+  final TextEditingController obsCtrl;
 
   bool get isValid => true; // duração zero = fase manual
 
@@ -54,7 +60,6 @@ class _SectionData {
 
   TimerPhase toPhase(int index, {int? groupIndex}) {
     final raw = labelCtrl.text.trim();
-    final note = seriesNoteCtrl.text.trim();
     return TimerPhase(
       type: PhaseType.work,
       label: raw.isEmpty ? 'Series ${index + 1}' : raw,
@@ -63,7 +68,9 @@ class _SectionData {
         seconds: int.tryParse(secCtrl.text) ?? 0,
       ),
       groupIndex: groupIndex,
-      seriesNote: note.isEmpty ? null : note,
+      reps: repsCtrl.text.trim().isEmpty ? null : repsCtrl.text.trim(),
+      weight: weightCtrl.text.trim().isEmpty ? null : weightCtrl.text.trim(),
+      obs: obsCtrl.text.trim().isEmpty ? null : obsCtrl.text.trim(),
     );
   }
 
@@ -73,7 +80,9 @@ class _SectionData {
     secCtrl.dispose();
     restMinCtrl.dispose();
     restSecCtrl.dispose();
-    seriesNoteCtrl.dispose();
+    repsCtrl.dispose();
+    weightCtrl.dispose();
+    obsCtrl.dispose();
   }
 }
 
@@ -189,7 +198,9 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
             sec: workSec,
             restMin: restMin,
             restSec: restSec,
-            seriesNote: phase.seriesNote ?? '',
+            reps: phase.reps ?? '',
+            weight: phase.weight ?? '',
+            obs: phase.obs ?? '',
           ));
         }
         i++;
@@ -227,7 +238,9 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
               sec: workSec,
               restMin: restMin,
               restSec: restSec,
-              seriesNote: phase.seriesNote ?? '',
+              reps: phase.reps ?? '',
+              weight: phase.weight ?? '',
+              obs: phase.obs ?? '',
             ));
           }
           j++;
@@ -322,7 +335,9 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
       sec: int.tryParse(section.secCtrl.text) ?? 0,
       restMin: int.tryParse(section.restMinCtrl.text) ?? 0,
       restSec: int.tryParse(section.restSecCtrl.text) ?? 0,
-      seriesNote: section.seriesNoteCtrl.text.trim(),
+      reps: section.repsCtrl.text.trim(),
+      weight: section.weightCtrl.text.trim(),
+      obs: section.obsCtrl.text.trim(),
     );
     setState(() =>
         group.sections.insert(group.sections.indexOf(section) + 1, copy));
@@ -1164,7 +1179,7 @@ class _SectionCardState extends State<_SectionCard> {
                   ],
                 ),
 
-                // Nota da série (campo de planejamento)
+                // Campos de planejamento: reps + peso + obs
                 const SizedBox(height: AppSpacing.sm),
                 Divider(
                   height: 1,
@@ -1172,38 +1187,30 @@ class _SectionCardState extends State<_SectionCard> {
                   color: Colors.white.withValues(alpha: 0.06),
                 ),
                 const SizedBox(height: AppSpacing.sm - 2),
-                TextField(
-                  controller: widget.data.seriesNoteCtrl,
-                  onChanged: (_) => widget.onChanged(),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.white70,
-                        fontSize: 12,
+                Row(
+                  children: [
+                    Expanded(
+                      child: _PlanningField(
+                        controller: widget.data.repsCtrl,
+                        hint: 'Reps',
+                        onChanged: widget.onChanged,
                       ),
-                  decoration: InputDecoration(
-                    hintText: 'Reference, e.g. 80kg / 12 reps',
-                    hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          fontSize: 12,
-                        ),
-                    prefixIcon: Icon(
-                      Icons.notes_rounded,
-                      size: 14,
-                      color: Colors.white.withValues(alpha: 0.25),
                     ),
-                    prefixIconConstraints:
-                        const BoxConstraints(minWidth: 28, minHeight: 28),
-                    isDense: true,
-                    filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.04),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide.none,
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: _PlanningField(
+                        controller: widget.data.weightCtrl,
+                        hint: 'Weight',
+                        onChanged: widget.onChanged,
+                      ),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.xs + 2,
-                      vertical: AppSpacing.xs,
-                    ),
-                  ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xs + 2),
+                _PlanningField(
+                  controller: widget.data.obsCtrl,
+                  hint: 'Notes (e.g. grip, tempo)',
+                  onChanged: widget.onChanged,
                 ),
               ],
             ),
@@ -1557,6 +1564,52 @@ class _DurationField extends StatelessWidget {
               ),
         ),
       ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Campo compacto de planejamento (reps, peso, obs)
+// ---------------------------------------------------------------------------
+
+class _PlanningField extends StatelessWidget {
+  const _PlanningField({
+    required this.controller,
+    required this.hint,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final String hint;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      onChanged: (_) => onChanged(),
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.white70,
+            fontSize: 12,
+          ),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Colors.white.withValues(alpha: 0.2),
+              fontSize: 12,
+            ),
+        isDense: true,
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.04),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xs + 2,
+          vertical: AppSpacing.xs,
+        ),
+      ),
     );
   }
 }
