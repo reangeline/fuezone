@@ -17,28 +17,54 @@ enum PhaseType {
   cooldown, // opcional, ao final
 }
 
+/// Grupo de exercício dentro de um workout (ex: "Supino reto").
+/// Agrupa visualmente as fases de trabalho/descanso que pertencem
+/// ao mesmo exercício. Opcional — presets sem grupos funcionam normalmente.
+class WorkoutGroup {
+  final String name; // ex: "Supino reto"
+  final String? note; // anotação opcional no nível do grupo
+
+  const WorkoutGroup({required this.name, this.note});
+}
+
 /// Uma fase única e cronometrada dentro da sequência.
 class TimerPhase {
   final PhaseType type;
 
   /// Nome editável pela pessoa ("Peito", "Round 1", "Sprint").
-  /// Resolve a reclamação real: poder nomear as fases em vez de só
-  /// "trabalho/descanso".
   final String label;
 
   final Duration duration;
+
+  /// Índice em [TimerConfig.groups] ao qual esta fase pertence.
+  /// null = fase de preset legado ou sem grupos (fight/HIIT/etc.).
+  final int? groupIndex;
+
+  /// Referência de planejamento por série ("80kg", "12 reps").
+  /// Preenchido na criação do treino; exibido como leitura durante execução.
+  final String? seriesNote;
 
   const TimerPhase({
     required this.type,
     required this.label,
     required this.duration,
+    this.groupIndex,
+    this.seriesNote,
   });
 
-  TimerPhase copyWith({PhaseType? type, String? label, Duration? duration}) {
+  TimerPhase copyWith({
+    PhaseType? type,
+    String? label,
+    Duration? duration,
+    int? groupIndex,
+    String? seriesNote,
+  }) {
     return TimerPhase(
       type: type ?? this.type,
       label: label ?? this.label,
       duration: duration ?? this.duration,
+      groupIndex: groupIndex ?? this.groupIndex,
+      seriesNote: seriesNote ?? this.seriesNote,
     );
   }
 }
@@ -60,15 +86,19 @@ class TimerConfig {
   /// do round). Zero desliga.
   final int warningSeconds;
 
+  /// Grupos de exercício (ex: "Supino reto", "Supino inclinado").
+  /// Lista vazia = preset sem grupos — comportamento legado inalterado.
+  final List<WorkoutGroup> groups;
+
   const TimerConfig({
     required this.name,
     required this.phases,
     this.workoutType = WorkoutType.workout,
     this.warningSeconds = 10,
+    this.groups = const [],
   });
 
-  /// Duração total somando todas as fases. Útil pra UI mostrar
-  /// "treino de 32min" antes de começar.
+  /// Duração total somando todas as fases.
   Duration get totalDuration =>
       phases.fold(Duration.zero, (sum, p) => sum + p.duration);
 

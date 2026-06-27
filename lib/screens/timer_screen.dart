@@ -970,10 +970,32 @@ class _WorkoutLayoutState extends State<_WorkoutLayout> {
 
   GlobalKey _keyFor(int i) => _keys.putIfAbsent(i, GlobalKey.new);
 
+  /// Constrói a lista virtual de itens a renderizar no ListView,
+  /// inserindo headers de grupo quando o config tem grupos definidos.
+  List<_ListItem> _buildItems() {
+    final phases = widget.config.phases;
+    final hasGroups = widget.config.groups.isNotEmpty;
+    if (!hasGroups) {
+      return [for (var i = 0; i < phases.length; i++) _PhaseListItem(i, phases[i])];
+    }
+    final items = <_ListItem>[];
+    int? lastGroupIndex;
+    for (var i = 0; i < phases.length; i++) {
+      final phase = phases[i];
+      final gi = phase.groupIndex;
+      if (gi != null && gi != lastGroupIndex && gi < widget.config.groups.length) {
+        items.add(_GroupHeaderItem(gi, widget.config.groups[gi]));
+        lastGroupIndex = gi;
+      }
+      items.add(_PhaseListItem(i, phase));
+    }
+    return items;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final phases = widget.config.phases;
     final current = widget.snapshot.phaseIndex;
+    final items = _buildItems();
 
     return Column(
       children: [
@@ -984,9 +1006,22 @@ class _WorkoutLayoutState extends State<_WorkoutLayout> {
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.sm,
             ),
-            itemCount: phases.length,
-            itemBuilder: (context, i) {
-              final phase = phases[i];
+            itemCount: items.length,
+            itemBuilder: (context, idx) {
+              final item = items[idx];
+
+              if (item is _GroupHeaderItem) {
+                return _GroupHeader(
+                  group: item.group,
+                  groupIndex: item.groupIndex,
+                  config: widget.config,
+                  currentPhaseIndex: current,
+                );
+              }
+
+              final phaseItem = item as _PhaseListItem;
+              final i = phaseItem.phaseIndex;
+              final phase = phaseItem.phase;
               final isCurrent = i == current;
               final isDone = i < current;
               final isManualWait = isCurrent && widget.isAwaitingManual;
@@ -1092,14 +1127,33 @@ class _WorkoutPhaseItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
-                  child: Text(
-                   phase.label.toUpperCase(),
-                   style: const TextStyle(
-                     color: Colors.white,
-                     fontSize: 17,
-                     fontWeight: FontWeight.w800,
-                     letterSpacing: 1.5,
-                   ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        phase.label.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      if (phase.seriesNote != null &&
+                          phase.seriesNote!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 3),
+                          child: Text(
+                            phase.seriesNote!,
+                            style: const TextStyle(
+                              color: Colors.white38,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 Text(
@@ -1215,6 +1269,138 @@ class _WorkoutPhaseItem extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Itens virtuais para o ListView com grupos
+// ---------------------------------------------------------------------------
+
+sealed class _ListItem {}
+
+class _GroupHeaderItem extends _ListItem {
+  _GroupHeaderItem(this.groupIndex, this.group);
+  final int groupIndex;
+  final WorkoutGroup group;
+}
+
+class _PhaseListItem extends _ListItem {
+  _PhaseListItem(this.phaseIndex, this.phase);
+  final int phaseIndex;
+  final TimerPhase phase;
+}
+
+// ---------------------------------------------------------------------------
+// Header de grupo na tela de execução
+// ---------------------------------------------------------------------------
+
+class _GroupHeader extends StatelessWidget {
+  const _GroupHeader({
+    required this.group,
+    required this.groupIndex,
+    required this.config,
+    required this.currentPhaseIndex,
+  });
+
+  final WorkoutGroup group;
+  final int groupIndex;
+  final TimerConfig config;
+  final int currentPhaseIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.xs),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: AppColors.work.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: AppColors.work.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              group.name.toUpperCase(),
+              style: const TextStyle(
+                color: AppColors.work,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: _GroupProgressDots(
+              config: config,
+              groupIndex: groupIndex,
+              currentPhaseIndex: currentPhaseIndex,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Dots de progresso por grupo
+// ---------------------------------------------------------------------------
+
+class _GroupProgressDots extends StatelessWidget {
+  const _GroupProgressDots({
+    required this.config,
+    required this.groupIndex,
+    required this.currentPhaseIndex,
+  });
+
+  final TimerConfig config;
+  final int groupIndex;
+  final int currentPhaseIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    final workPhases = <int>[]; // índices das fases de trabalho deste grupo
+    for (var i = 0; i < config.phases.length; i++) {
+      final p = config.phases[i];
+      if (p.groupIndex == groupIndex && p.type == PhaseType.work) {
+        workPhases.add(i);
+      }
+    }
+    if (workPhases.isEmpty) return const SizedBox.shrink();
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: workPhases.map((phaseIdx) {
+        final isDone = phaseIdx < currentPhaseIndex;
+        final isCurrent = phaseIdx == currentPhaseIndex;
+        final radius = isCurrent ? 5.0 : 4.0;
+        final alpha = (isDone || isCurrent) ? 1.0 : 0.2;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 3),
+          child: isDone
+              ? Icon(
+                  Icons.check_rounded,
+                  size: 11,
+                  color: Colors.white.withValues(alpha: 0.6),
+                )
+              : Container(
+                  width: radius * 2,
+                  height: radius * 2,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isCurrent
+                        ? AppColors.work
+                        : Colors.white.withValues(alpha: alpha),
+                  ),
+                ),
+        );
+      }).toList(),
     );
   }
 }
