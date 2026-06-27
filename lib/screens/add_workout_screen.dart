@@ -1198,19 +1198,14 @@ class _SectionCardState extends State<_SectionCard> {
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
+                      flex: 2,
                       child: _PlanningField(
-                        controller: widget.data.weightCtrl,
-                        hint: 'Weight',
+                        controller: widget.data.obsCtrl,
+                        hint: 'Notes',
                         onChanged: widget.onChanged,
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: AppSpacing.xs + 2),
-                _PlanningField(
-                  controller: widget.data.obsCtrl,
-                  hint: 'Notes (e.g. grip, tempo)',
-                  onChanged: widget.onChanged,
                 ),
               ],
             ),

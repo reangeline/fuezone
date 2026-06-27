@@ -1095,19 +1095,13 @@ class _WorkoutPhaseItem extends StatelessWidget {
 
   bool _hasPlanningInfo(TimerPhase p) =>
       (p.reps != null && p.reps!.isNotEmpty) ||
-      (p.weight != null && p.weight!.isNotEmpty) ||
       (p.obs != null && p.obs!.isNotEmpty);
 
   String _planningLabel(TimerPhase p) {
-    final parts = <String>[
-      if (p.reps != null && p.reps!.isNotEmpty) p.reps!,
-      if (p.weight != null && p.weight!.isNotEmpty) p.weight!,
-    ];
-    final main = parts.join(' × ');
-    if (p.obs != null && p.obs!.isNotEmpty) {
-      return main.isEmpty ? p.obs! : '$main · ${p.obs!}';
-    }
-    return main;
+    final reps = p.reps != null && p.reps!.isNotEmpty ? p.reps! : null;
+    final obs = p.obs != null && p.obs!.isNotEmpty ? p.obs! : null;
+    if (reps != null && obs != null) return '$reps · $obs';
+    return reps ?? obs ?? '';
   }
 
   String _fmt(Duration d) {
