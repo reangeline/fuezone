@@ -137,9 +137,13 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
 
   bool get _isEditing => widget.editPreset != null;
 
-  // Modo grupos: true quando o workout tem mais de 1 grupo ou o único grupo
-  // tem nome preenchido (exercício nomeado).
-  bool get _hasGroups => _groups.length > 1 || (_groups.isNotEmpty && _groups.first.nameCtrl.text.trim().isNotEmpty);
+  // Grupos disponíveis apenas para tipo Workout.
+  // Para Fight e HIIT usa sempre modo legado (lista plana de seções).
+  bool get _hasGroups =>
+      _workoutType == WorkoutType.workout &&
+      (_groups.length > 1 ||
+          (_groups.isNotEmpty &&
+              _groups.first.nameCtrl.text.trim().isNotEmpty));
 
   @override
   void initState() {
@@ -686,7 +690,8 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
                       ),
                     ),
 
-                    // Botão converter para modo grupos
+                    // Botão converter para modo grupos (apenas Workout)
+                    if (_workoutType == WorkoutType.workout) ...[
                     const SizedBox(height: AppSpacing.sm),
                     GestureDetector(
                       onTap: () {
@@ -713,6 +718,8 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
                         ],
                       ),
                     ),
+                    ], // end if workout type
+
                   ],
 
                   const SizedBox(height: AppSpacing.xl),
