@@ -110,6 +110,9 @@ TimerConfig _configFromJson(Map<String, dynamic> json) => TimerConfig(
       phases: (json['phases'] as List)
           .map((p) => _phaseFromJson(p as Map<String, dynamic>))
           .toList(),
+      groups: ((json['groups'] as List?) ?? [])
+          .map((g) => _groupFromJson(g as Map<String, dynamic>))
+          .toList(),
     );
 
 Map<String, dynamic> _configToJson(TimerConfig c) => {
@@ -117,16 +120,32 @@ Map<String, dynamic> _configToJson(TimerConfig c) => {
       'workoutType': c.workoutType.name,
       'warningSeconds': c.warningSeconds,
       'phases': c.phases.map(_phaseToJson).toList(),
+      'groups': c.groups.map(_groupToJson).toList(),
+    };
+
+WorkoutGroup _groupFromJson(Map<String, dynamic> json) => WorkoutGroup(
+      name: json['name'] as String,
+      note: json['note'] as String?,
+    );
+
+Map<String, dynamic> _groupToJson(WorkoutGroup g) => {
+      'name': g.name,
+      if (g.note != null) 'note': g.note,
     };
 
 TimerPhase _phaseFromJson(Map<String, dynamic> json) => TimerPhase(
       type: PhaseType.values.byName(json['type'] as String),
       label: json['label'] as String,
       duration: Duration(milliseconds: (json['durationMs'] as num).toInt()),
+      groupIndex: json['groupIndex'] as int?,
+      seriesNote: json['seriesNote'] as String?,
     );
 
 Map<String, dynamic> _phaseToJson(TimerPhase p) => {
       'type': p.type.name,
       'label': p.label,
       'durationMs': p.duration.inMilliseconds,
+      if (p.groupIndex != null) 'groupIndex': p.groupIndex,
+      if (p.seriesNote != null && p.seriesNote!.isNotEmpty)
+        'seriesNote': p.seriesNote,
     };
