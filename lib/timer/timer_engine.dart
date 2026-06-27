@@ -2,7 +2,7 @@ import 'dart:async';
 import 'timer_models.dart';
 
 /// Estado de execução do motor.
-enum TimerStatus { idle, running, paused, finished }
+enum TimerStatus { idle, running, paused, awaitingManual, finished }
 
 /// Eventos discretos que a camada de áudio/haptics escuta.
 /// O motor NÃO toca som — só anuncia o que aconteceu. Isso mantém
@@ -73,12 +73,20 @@ class TimerEngine {
   TimerStatus get status => _status;
 
   void start() {
-    if (_status == TimerStatus.running) return;
+    if (_status == TimerStatus.running || _status == TimerStatus.awaitingManual) return;
     if (_status == TimerStatus.idle) {
       _phaseIndex = 0;
       _completedPhasesDuration = Duration.zero;
       _beginPhase(_phaseIndex);
+      // _beginPhase pode ter entrado em awaitingManual (fase de duração zero).
+      if (_status == TimerStatus.awaitingManual) return;
     } else if (_status == TimerStatus.paused) {
+      if (_phaseEndsAt == null) {
+        // Estava em awaitingManual antes de pausar — retoma a espera manual.
+        _status = TimerStatus.awaitingManual;
+        _emitSnapshot();
+        return;
+      }
       // Retoma: reposiciona o fim da fase a partir de agora.
       final remaining = config.phases[_phaseIndex].duration -
           _phaseElapsedBeforePause;
@@ -89,6 +97,15 @@ class TimerEngine {
   }
 
   void pause() {
+    if (_status == TimerStatus.awaitingManual) {
+      // Pausa durante espera manual: preserva o estado pra retomar depois.
+      _ticker?.cancel();
+      _status = TimerStatus.paused;
+      _phaseEndsAt = null; // sinaliza que era awaitingManual
+      _phaseElapsedBeforePause = Duration.zero;
+      _emitSnapshot();
+      return;
+    }
     if (_status != TimerStatus.running) return;
     _ticker?.cancel();
     // Guarda quanto já passou da fase pra retomar exatamente daqui.
@@ -105,6 +122,14 @@ class TimerEngine {
     _advancePhase();
   }
 
+  /// Confirma a conclusão de uma fase de duração zero (execução manual).
+  /// Só tem efeito quando o motor está em [TimerStatus.awaitingManual].
+  void completeCurrentPhase() {
+    if (_status != TimerStatus.awaitingManual) return;
+    _status = TimerStatus.running;
+    _advancePhase();
+  }
+
   /// Encerra tudo. A UI usa isto pra disparar o ad de fim de sessão.
   void stop() {
     _ticker?.cancel();
@@ -116,8 +141,16 @@ class TimerEngine {
     _warningFired = false;
     _phaseElapsedBeforePause = Duration.zero;
     final phase = config.phases[index];
-    _phaseEndsAt = DateTime.now().add(phase.duration);
     _eventController.add(TimerEvent.phaseStarted);
+    if (phase.duration == Duration.zero) {
+      // Fase manual: não agenda deadline; espera ação do usuário.
+      _status = TimerStatus.awaitingManual;
+      _phaseEndsAt = null;
+      _warningFired = true; // sem aviso em fase manual
+      _emitSnapshot();
+      return;
+    }
+    _phaseEndsAt = DateTime.now().add(phase.duration);
     _emitSnapshot();
   }
 
@@ -170,7 +203,12 @@ class TimerEngine {
   void _emitSnapshot() {
     final phase = config.phases[_phaseIndex];
     Duration remaining;
-    if (_status == TimerStatus.paused) {
+    if (_status == TimerStatus.awaitingManual) {
+      remaining = Duration.zero;
+    } else if (_status == TimerStatus.paused && _phaseEndsAt == null) {
+      // Pausado enquanto esperava avanço manual.
+      remaining = Duration.zero;
+    } else if (_status == TimerStatus.paused) {
       remaining = phase.duration - _phaseElapsedBeforePause;
     } else if (_status == TimerStatus.finished) {
       remaining = Duration.zero;

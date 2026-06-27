@@ -36,10 +36,13 @@ class _SectionData {
   final TextEditingController restMinCtrl;
   final TextEditingController restSecCtrl;
 
-  bool get isValid {
+  // Duração zero é permitida — significa execução manual.
+  bool get isValid => true;
+
+  bool get isManual {
     final m = int.tryParse(minCtrl.text) ?? 0;
     final s = int.tryParse(secCtrl.text) ?? 0;
-    return m * 60 + s > 0;
+    return m * 60 + s == 0;
   }
 
   Duration get restDuration => Duration(
@@ -157,9 +160,7 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
   void _rebuild() => setState(() {});
 
   bool get _isValid =>
-      _nameCtrl.text.trim().isNotEmpty &&
-      _sections.isNotEmpty &&
-      _sections.every((s) => s.isValid);
+      _nameCtrl.text.trim().isNotEmpty && _sections.isNotEmpty;
 
   @override
   void dispose() {
@@ -186,6 +187,17 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
       section.dispose();
       _sections.remove(section);
     });
+  }
+
+  void _duplicateSection(_SectionData section) {
+    final copy = _SectionData(
+      label: section.labelCtrl.text.trim(),
+      min: int.tryParse(section.minCtrl.text) ?? 0,
+      sec: int.tryParse(section.secCtrl.text) ?? 0,
+      restMin: int.tryParse(section.restMinCtrl.text) ?? 0,
+      restSec: int.tryParse(section.restSecCtrl.text) ?? 0,
+    );
+    setState(() => _sections.insert(_sections.indexOf(section) + 1, copy));
   }
 
   void _onReorder(int oldIndex, int newIndex) {
@@ -390,15 +402,32 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
                     onReorderItem: _onReorder,
                     children: [
                       for (final (i, section) in _sections.indexed)
-                        Padding(
+                        Dismissible(
                           key: section.key,
-                          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                          child: _SectionCard(
-                            index: i,
-                            data: section,
-                            canDelete: _sections.length > 1,
-                            onDelete: () => _deleteSection(section),
-                            onChanged: () => setState(() {}),
+                          direction: _sections.length > 1
+                              ? DismissDirection.endToStart
+                              : DismissDirection.none,
+                          secondaryBackground: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: AppSpacing.lg),
+                            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withValues(alpha: 0.8),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(Icons.delete_outline_rounded,
+                                color: Colors.white, size: 22),
+                          ),
+                          background: const SizedBox.shrink(),
+                          onDismissed: (_) => _deleteSection(section),
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                            child: _SectionCard(
+                              index: i,
+                              data: section,
+                              onDuplicate: () => _duplicateSection(section),
+                              onChanged: () => setState(() {}),
+                            ),
                           ),
                         ),
                     ],
@@ -714,15 +743,13 @@ class _SectionCard extends StatefulWidget {
   const _SectionCard({
     required this.index,
     required this.data,
-    required this.canDelete,
-    required this.onDelete,
+    required this.onDuplicate,
     required this.onChanged,
   });
 
   final int index;
   final _SectionData data;
-  final bool canDelete;
-  final VoidCallback onDelete;
+  final VoidCallback onDuplicate;
   final VoidCallback onChanged;
 
   @override
@@ -730,8 +757,6 @@ class _SectionCard extends StatefulWidget {
 }
 
 class _SectionCardState extends State<_SectionCard> {
-  bool _durationTouched = false;
-
   void _clampSec() {
     final raw = int.tryParse(widget.data.secCtrl.text) ?? 0;
     final clamped = raw.clamp(0, 59);
@@ -740,7 +765,6 @@ class _SectionCardState extends State<_SectionCard> {
       widget.data.secCtrl.selection =
           TextSelection.collapsed(offset: widget.data.secCtrl.text.length);
     }
-    setState(() => _durationTouched = true);
     widget.onChanged();
   }
 
@@ -755,13 +779,6 @@ class _SectionCardState extends State<_SectionCard> {
     widget.onChanged();
   }
 
-  void _onDurationChanged() {
-    setState(() => _durationTouched = true);
-    widget.onChanged();
-  }
-
-  bool get _showError => _durationTouched && !widget.data.isValid;
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -769,9 +786,7 @@ class _SectionCardState extends State<_SectionCard> {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: _showError
-              ? Colors.red.withValues(alpha: 0.5)
-              : Colors.white.withValues(alpha: 0.06),
+          color: Colors.white.withValues(alpha: 0.06),
           width: 1,
         ),
       ),
@@ -855,7 +870,7 @@ class _SectionCardState extends State<_SectionCard> {
                       controller: widget.data.minCtrl,
                       hint: '0',
                       label: 'min',
-                      onChanged: _onDurationChanged,
+                      onChanged: widget.onChanged,
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     _DurationField(
@@ -863,16 +878,29 @@ class _SectionCardState extends State<_SectionCard> {
                       hint: '00',
                       label: 'sec',
                       maxValue: 59,
-                      onChanged: _onDurationChanged,
+                      onChanged: widget.onChanged,
                       onEditingComplete: _clampSec,
                     ),
-                    if (_showError) ...[
+                    if (widget.data.isManual) ...[
                       const SizedBox(width: AppSpacing.sm),
-                      Text(
-                        'Duration > 0',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Colors.red.withValues(alpha: 0.8),
-                            ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.work.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: AppColors.work.withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: Text(
+                          'Manual',
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: AppColors.work,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
                       ),
                     ],
                   ],
@@ -923,19 +951,18 @@ class _SectionCardState extends State<_SectionCard> {
             ),
           ),
 
-          // Deletar
-          if (widget.canDelete)
-            GestureDetector(
-              onTap: widget.onDelete,
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.xs),
-                child: Icon(
-                  Icons.close_rounded,
-                  color: Colors.white.withValues(alpha: 0.3),
-                  size: 18,
-                ),
+          // Duplicar
+          GestureDetector(
+            onTap: widget.onDuplicate,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xs),
+              child: Icon(
+                Icons.copy_rounded,
+                color: Colors.white.withValues(alpha: 0.3),
+                size: 16,
               ),
             ),
+          ),
         ],
       ),
     );

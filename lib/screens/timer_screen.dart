@@ -97,6 +97,7 @@ class _TimerScreenState extends State<TimerScreen> {
           onResume: _engine.start,
           onSkip: _engine.skip,
           onStop: _engine.stop,
+          onComplete: _engine.completeCurrentPhase,
         );
       },
     );
@@ -139,6 +140,7 @@ class _TimerView extends StatelessWidget {
     required this.onResume,
     required this.onSkip,
     required this.onStop,
+    required this.onComplete,
     this.heroTag,
   });
 
@@ -149,9 +151,11 @@ class _TimerView extends StatelessWidget {
   final VoidCallback onResume;
   final VoidCallback onSkip;
   final VoidCallback onStop;
+  final VoidCallback onComplete;
 
   bool get _isFinished => snapshot.status == TimerStatus.finished;
   bool get _isRunning  => snapshot.status == TimerStatus.running;
+  bool get _isAwaitingManual => snapshot.status == TimerStatus.awaitingManual;
 
   bool get _isWarning {
     if (config.warningSeconds <= 0) return false;
@@ -195,10 +199,12 @@ class _TimerView extends StatelessWidget {
                       isWarning: _isWarning,
                       isRunning: _isRunning,
                       isFinished: _isFinished,
+                      isAwaitingManual: _isAwaitingManual,
                       onPause: onPause,
                       onResume: onResume,
                       onSkip: onSkip,
                       onStop: onStop,
+                      onComplete: onComplete,
                     ),
                   )
                 else
@@ -212,12 +218,14 @@ class _TimerView extends StatelessWidget {
                             isWarning: _isWarning,
                             isRunning: _isRunning,
                             isFinished: _isFinished,
+                            isAwaitingManual: _isAwaitingManual,
                             reduceMotion: reduceMotion,
                             fmtRemaining: _fmtRemaining,
                             onPause: onPause,
                             onResume: onResume,
                             onSkip: onSkip,
                             onStop: onStop,
+                            onComplete: onComplete,
                           );
                         }
                         return Column(
@@ -239,7 +247,9 @@ class _TimerView extends StatelessWidget {
                                 child: FittedBox(
                                   fit: BoxFit.contain,
                                   child: Text(
-                                    _fmtRemaining(snapshot.remainingInPhase),
+                                    _isAwaitingManual
+                                        ? '--:--'
+                                        : _fmtRemaining(snapshot.remainingInPhase),
                                     softWrap: false,
                                     style: TextStyle(
                                       color: _isWarning
@@ -260,10 +270,12 @@ class _TimerView extends StatelessWidget {
                             _Controls(
                               isRunning: _isRunning,
                               isFinished: _isFinished,
+                              isAwaitingManual: _isAwaitingManual,
                               onPause: onPause,
                               onResume: onResume,
                               onSkip: onSkip,
                               onStop: onStop,
+                              onComplete: onComplete,
                             ),
                             const SizedBox(height: AppSpacing.lg),
                           ],
@@ -662,22 +674,30 @@ class _Controls extends StatelessWidget {
   const _Controls({
     required this.isRunning,
     required this.isFinished,
+    required this.isAwaitingManual,
     required this.onPause,
     required this.onResume,
     required this.onSkip,
     required this.onStop,
+    required this.onComplete,
   });
 
   final bool isRunning;
   final bool isFinished;
+  final bool isAwaitingManual;
   final VoidCallback onPause;
   final VoidCallback onResume;
   final VoidCallback onSkip;
   final VoidCallback onStop;
+  final VoidCallback onComplete;
 
   @override
   Widget build(BuildContext context) {
     if (isFinished) return const SizedBox.shrink();
+
+    // Quando awaitingManual: play/pause ainda fica disponível; skip vira
+    // "Concluir série" como ação primária.
+    final showPause = isRunning || isAwaitingManual;
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -693,16 +713,24 @@ class _Controls extends StatelessWidget {
             onTap: onStop,
           ),
           _ControlButton(
-            icon: isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
+            icon: showPause ? Icons.pause_rounded : Icons.play_arrow_rounded,
             size: 88,
-            primary: true,
-            onTap: isRunning ? onPause : onResume,
+            primary: !isAwaitingManual,
+            onTap: showPause ? onPause : onResume,
           ),
-          _ControlButton(
-            icon: Icons.skip_next_rounded,
-            size: 64,
-            onTap: onSkip,
-          ),
+          if (isAwaitingManual)
+            _ControlButton(
+              icon: Icons.check_circle_outline_rounded,
+              size: 88,
+              primary: true,
+              onTap: onComplete,
+            )
+          else
+            _ControlButton(
+              icon: Icons.skip_next_rounded,
+              size: 64,
+              onTap: onSkip,
+            ),
         ],
       ),
     );
@@ -748,12 +776,14 @@ class _LandscapeTimerLayout extends StatelessWidget {
     required this.isWarning,
     required this.isRunning,
     required this.isFinished,
+    required this.isAwaitingManual,
     required this.reduceMotion,
     required this.fmtRemaining,
     required this.onPause,
     required this.onResume,
     required this.onSkip,
     required this.onStop,
+    required this.onComplete,
   });
 
   final TimerSnapshot snapshot;
@@ -761,12 +791,14 @@ class _LandscapeTimerLayout extends StatelessWidget {
   final bool isWarning;
   final bool isRunning;
   final bool isFinished;
+  final bool isAwaitingManual;
   final bool reduceMotion;
   final String Function(Duration) fmtRemaining;
   final VoidCallback onPause;
   final VoidCallback onResume;
   final VoidCallback onSkip;
   final VoidCallback onStop;
+  final VoidCallback onComplete;
 
   @override
   Widget build(BuildContext context) {
@@ -795,7 +827,9 @@ class _LandscapeTimerLayout extends StatelessWidget {
                         child: FittedBox(
                           fit: BoxFit.contain,
                           child: Text(
-                            fmtRemaining(snapshot.remainingInPhase),
+                            isAwaitingManual
+                                ? '--:--'
+                                : fmtRemaining(snapshot.remainingInPhase),
                             softWrap: false,
                             style: TextStyle(
                               color: isWarning ? AppColors.warning : Colors.white,
@@ -825,13 +859,23 @@ class _LandscapeTimerLayout extends StatelessWidget {
                       _ControlButton(icon: Icons.stop_rounded, size: 44, onTap: onStop),
                       const SizedBox(height: 12),
                       _ControlButton(
-                        icon: isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                        icon: (isRunning || isAwaitingManual)
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
                         size: 58,
-                        primary: true,
-                        onTap: isRunning ? onPause : onResume,
+                        primary: !isAwaitingManual,
+                        onTap: (isRunning || isAwaitingManual) ? onPause : onResume,
                       ),
                       const SizedBox(height: 12),
-                      _ControlButton(icon: Icons.skip_next_rounded, size: 44, onTap: onSkip),
+                      if (isAwaitingManual)
+                        _ControlButton(
+                          icon: Icons.check_circle_outline_rounded,
+                          size: 58,
+                          primary: true,
+                          onTap: onComplete,
+                        )
+                      else
+                        _ControlButton(icon: Icons.skip_next_rounded, size: 44, onTap: onSkip),
                     ],
                   ),
                 ),
@@ -869,10 +913,12 @@ class _WorkoutLayout extends StatefulWidget {
     required this.isWarning,
     required this.isRunning,
     required this.isFinished,
+    required this.isAwaitingManual,
     required this.onPause,
     required this.onResume,
     required this.onSkip,
     required this.onStop,
+    required this.onComplete,
   });
 
   final TimerSnapshot snapshot;
@@ -880,10 +926,12 @@ class _WorkoutLayout extends StatefulWidget {
   final bool isWarning;
   final bool isRunning;
   final bool isFinished;
+  final bool isAwaitingManual;
   final VoidCallback onPause;
   final VoidCallback onResume;
   final VoidCallback onSkip;
   final VoidCallback onStop;
+  final VoidCallback onComplete;
 
   @override
   State<_WorkoutLayout> createState() => _WorkoutLayoutState();
@@ -941,12 +989,15 @@ class _WorkoutLayoutState extends State<_WorkoutLayout> {
               final phase = phases[i];
               final isCurrent = i == current;
               final isDone = i < current;
+              final isManualWait = isCurrent && widget.isAwaitingManual;
               final totalMs = phase.duration.inMilliseconds.clamp(1, 1 << 53);
-              final progress = isCurrent
-                  ? 1.0 -
-                     (widget.snapshot.remainingInPhase.inMilliseconds /
-                         totalMs)
-                  : (isDone ? 1.0 : 0.0);
+              final progress = isManualWait
+                  ? 0.0
+                  : (isCurrent
+                      ? 1.0 -
+                         (widget.snapshot.remainingInPhase.inMilliseconds /
+                             totalMs)
+                      : (isDone ? 1.0 : 0.0));
 
               return Padding(
                 key: _keyFor(i),
@@ -964,6 +1015,7 @@ class _WorkoutLayoutState extends State<_WorkoutLayout> {
                      ? widget.snapshot.remainingInPhase
                      : null,
                   isWarning: isCurrent && widget.isWarning,
+                  isManualWait: isManualWait,
                 ),
               );
             },
@@ -972,10 +1024,12 @@ class _WorkoutLayoutState extends State<_WorkoutLayout> {
         _Controls(
           isRunning: widget.isRunning,
           isFinished: widget.isFinished,
+          isAwaitingManual: widget.isAwaitingManual,
           onPause: widget.onPause,
           onResume: widget.onResume,
           onSkip: widget.onSkip,
           onStop: widget.onStop,
+          onComplete: widget.onComplete,
         ),
         const SizedBox(height: AppSpacing.lg),
       ],
@@ -991,6 +1045,7 @@ class _WorkoutPhaseItem extends StatelessWidget {
     required this.progress,
     this.remaining,
     this.isWarning = false,
+    this.isManualWait = false,
   });
 
   final TimerPhase phase;
@@ -999,6 +1054,7 @@ class _WorkoutPhaseItem extends StatelessWidget {
   final double progress;
   final Duration? remaining;
   final bool isWarning;
+  final bool isManualWait;
 
   Color get _accent => AppColors.forPhase(phase.type);
 
@@ -1018,6 +1074,7 @@ class _WorkoutPhaseItem extends StatelessWidget {
   Widget _buildCurrentCard(BuildContext context) {
     final rem = remaining ?? phase.duration;
     final color = isWarning ? AppColors.warning : _accent;
+    final timeLabel = isManualWait ? '--:--' : _fmt(rem);
     return Container(
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
@@ -1046,7 +1103,7 @@ class _WorkoutPhaseItem extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  _fmt(rem),
+                  timeLabel,
                   style: TextStyle(
                    color: isWarning ? AppColors.warning : Colors.white,
                    fontSize: 40,
