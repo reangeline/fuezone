@@ -42,7 +42,14 @@ private struct CountdownView: View {
                 .font(.system(size: 48, weight: .black, design: .monospaced))
                 .foregroundStyle(.white)
         } else {
-            Text(context.state.phaseEndDate, style: .timer)
+            // timerInterval with countsDown:true clamps at 0:00 when the end
+            // date passes instead of flipping to count-up. This matters on the
+            // lock screen where WidgetKit may deliver the next-phase update with
+            // a small delay — during that gap Text(..., style: .timer) would
+            // have shown a count-up because phaseEndDate is already in the past.
+            let now = Date()
+            let end = context.state.phaseEndDate
+            Text(timerInterval: now...max(now, end), countsDown: true)
                 .font(.system(size: 48, weight: .black, design: .monospaced))
                 .foregroundStyle(.white)
                 .monospacedDigit()
@@ -142,7 +149,9 @@ private struct CompactCountdown: View {
             Image(systemName: "pause.fill")
                 .foregroundStyle(.white.opacity(0.7))
         } else {
-            Text(context.state.phaseEndDate, style: .timer)
+            let now = Date()
+            let end = context.state.phaseEndDate
+            Text(timerInterval: now...max(now, end), countsDown: true)
                 .font(.caption.monospacedDigit().weight(.semibold))
                 .foregroundStyle(.white)
                 .frame(minWidth: 36)
