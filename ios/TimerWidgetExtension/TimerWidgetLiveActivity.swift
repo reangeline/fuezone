@@ -42,14 +42,16 @@ private struct CountdownView: View {
                 .font(.system(size: 48, weight: .black, design: .monospaced))
                 .foregroundStyle(.white)
         } else {
-            // distantPast as start keeps it constant across phases so only
-            // phaseEndDate changes on updates — SwiftUI diffs one parameter
-            // instead of two, making the countdown reset reliably.
-            // countsDown:true clamps at 0:00 when the end date passes instead
-            // of flipping to count-up (the original bug on the lock screen).
-            // .id forces full view recreation on every phase change so the
-            // system timer inside Text() resets rather than updating in-place.
-            Text(timerInterval: Date.distantPast...context.state.phaseEndDate,
+            // Use a 1-hour window ending at phaseEndDate as the interval.
+            // Text(timerInterval:countsDown:) picks its display scale from the
+            // total interval duration — using Date.distantPast (~2000 years)
+            // made the formatter treat minutes as "0" in a year-scale display.
+            // A 1-hour window forces MM:SS/H:MM:SS scale and still correctly
+            // shows (end - now), clamping at 0:00 after the phase ends.
+            // .id forces view recreation on phase change so the system timer
+            // resets rather than updating the existing view in-place.
+            let end = context.state.phaseEndDate
+            Text(timerInterval: end.addingTimeInterval(-3600)...end,
                  countsDown: true)
                 .font(.system(size: 48, weight: .black, design: .monospaced))
                 .foregroundStyle(.white)
@@ -151,7 +153,8 @@ private struct CompactCountdown: View {
             Image(systemName: "pause.fill")
                 .foregroundStyle(.white.opacity(0.7))
         } else {
-            Text(timerInterval: Date.distantPast...context.state.phaseEndDate,
+            let end = context.state.phaseEndDate
+            Text(timerInterval: end.addingTimeInterval(-3600)...end,
                  countsDown: true)
                 .font(.caption.monospacedDigit().weight(.semibold))
                 .foregroundStyle(.white)
