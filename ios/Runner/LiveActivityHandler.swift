@@ -57,7 +57,17 @@ class LiveActivityHandler {
               let activity = currentActivity as? Activity<TimerActivityAttributes>
         else { result(nil); return }
         let state = contentState(from: args)
-        Task { await activity.update(using: state) }
+        Task {
+            do {
+                if #available(iOS 16.2, *) {
+                    await activity.update(ActivityContent(state: state, staleDate: nil))
+                } else {
+                    try await activity.update(using: state)
+                }
+            } catch {
+                print("[LiveActivity] update failed: \(error)")
+            }
+        }
         result(nil)
     }
 

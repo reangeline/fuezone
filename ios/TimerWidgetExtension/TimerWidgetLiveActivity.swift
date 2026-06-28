@@ -42,10 +42,21 @@ private struct CountdownView: View {
                 .font(.system(size: 48, weight: .black, design: .monospaced))
                 .foregroundStyle(.white)
         } else {
-            Text(context.state.phaseEndDate, style: .timer)
+            // Use a 1-hour window ending at phaseEndDate as the interval.
+            // Text(timerInterval:countsDown:) picks its display scale from the
+            // total interval duration — using Date.distantPast (~2000 years)
+            // made the formatter treat minutes as "0" in a year-scale display.
+            // A 1-hour window forces MM:SS/H:MM:SS scale and still correctly
+            // shows (end - now), clamping at 0:00 after the phase ends.
+            // .id forces view recreation on phase change so the system timer
+            // resets rather than updating the existing view in-place.
+            let end = context.state.phaseEndDate
+            Text(timerInterval: end.addingTimeInterval(-3600)...end,
+                 countsDown: true)
                 .font(.system(size: 48, weight: .black, design: .monospaced))
                 .foregroundStyle(.white)
                 .monospacedDigit()
+                .id(context.state.phaseIndex)
         }
     }
 
@@ -142,10 +153,13 @@ private struct CompactCountdown: View {
             Image(systemName: "pause.fill")
                 .foregroundStyle(.white.opacity(0.7))
         } else {
-            Text(context.state.phaseEndDate, style: .timer)
+            let end = context.state.phaseEndDate
+            Text(timerInterval: end.addingTimeInterval(-3600)...end,
+                 countsDown: true)
                 .font(.caption.monospacedDigit().weight(.semibold))
                 .foregroundStyle(.white)
                 .frame(minWidth: 36)
+                .id(context.state.phaseIndex)
         }
     }
 }
