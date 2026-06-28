@@ -42,17 +42,19 @@ private struct CountdownView: View {
                 .font(.system(size: 48, weight: .black, design: .monospaced))
                 .foregroundStyle(.white)
         } else {
-            // timerInterval with countsDown:true clamps at 0:00 when the end
-            // date passes instead of flipping to count-up. This matters on the
-            // lock screen where WidgetKit may deliver the next-phase update with
-            // a small delay — during that gap Text(..., style: .timer) would
-            // have shown a count-up because phaseEndDate is already in the past.
-            let now = Date()
-            let end = context.state.phaseEndDate
-            Text(timerInterval: now...max(now, end), countsDown: true)
+            // distantPast as start keeps it constant across phases so only
+            // phaseEndDate changes on updates — SwiftUI diffs one parameter
+            // instead of two, making the countdown reset reliably.
+            // countsDown:true clamps at 0:00 when the end date passes instead
+            // of flipping to count-up (the original bug on the lock screen).
+            // .id forces full view recreation on every phase change so the
+            // system timer inside Text() resets rather than updating in-place.
+            Text(timerInterval: Date.distantPast...context.state.phaseEndDate,
+                 countsDown: true)
                 .font(.system(size: 48, weight: .black, design: .monospaced))
                 .foregroundStyle(.white)
                 .monospacedDigit()
+                .id(context.state.phaseIndex)
         }
     }
 
@@ -149,12 +151,12 @@ private struct CompactCountdown: View {
             Image(systemName: "pause.fill")
                 .foregroundStyle(.white.opacity(0.7))
         } else {
-            let now = Date()
-            let end = context.state.phaseEndDate
-            Text(timerInterval: now...max(now, end), countsDown: true)
+            Text(timerInterval: Date.distantPast...context.state.phaseEndDate,
+                 countsDown: true)
                 .font(.caption.monospacedDigit().weight(.semibold))
                 .foregroundStyle(.white)
                 .frame(minWidth: 36)
+                .id(context.state.phaseIndex)
         }
     }
 }
